@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sender Discord Webhook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Fondo con rejilla digital */
+        #grid-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: linear-gradient(90deg, rgba(0, 255, 191, 0.1) 1px, transparent 1px),
+                        linear-gradient(0deg, rgba(0, 255, 191, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        .container, .captcha-container {
+            background: rgba(30, 30, 30, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 700px;
+            box-shadow: 0 10px 40px rgba(0, 255, 191, 0.3);
+            z-index: 2;
+            animation: fadeInScale 0.8s ease-out;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 255, 191, 0.4);
+            text-align: center;
+        }
+
+        .captcha-container {
+            max-width: 400px;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            color: #00ffbf;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(0, 255, 191, 0.8);
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px rgba(0, 255, 191, 0.5); }
+            to { text-shadow: 0 0 20px rgba(0, 255, 191, 0.8), 0 0 30px rgba(0, 255, 191, 0.4); }
+        }
+
+        .captcha-code {
+            font-size: 3em;
+            color: #ffffff;
+            letter-spacing: 10px;
+            margin: 20px 0;
+            background: #252525;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .captcha-input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 8px;
+            background: rgba(50, 50, 50, 0.85);
+            color: #ffffff;
+            font-size: 1.1em;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-input:focus {
+            background: rgba(70, 70, 70, 0.85);
+            box-shadow: 0 0 12px rgba(0, 255, 191, 0.8);
+            outline: none;
+        }
+
+        .captcha-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #00ffbf, #ff00ff);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 255, 191, 0.5);
+        }
+
+        .captcha-button:active {
+            transform: translateY(0);
+        }
+
+        .captcha-message {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 1em;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .captcha-message.success { background: #00cc99; }
+        .captcha-message.error { background: #ff4d4d; }
+
+        .form-group {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            color: #b0b0b0;
+            font-size: 0.95em;
+            transition: color 0.3s ease;
+        }
+
+        input[type="text"], textarea, input[type="number"], input[type="checkbox"] {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(50, 50, 50, 0.85);
+            color: #ffffff;
+            font-size: 1.1em;
+            transition: all 0.4s ease;
+            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="text"]:focus, textarea:focus, input[type="number"]:focus {
+            background: rgba(70, 70, 70, 0.85);
+            box-shadow: 0 0 15px rgba(0, 255, 191, 0.8);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 140px;
+        }
+
+        input[type="number"] {
+            width: 160px;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, #00ffbf, #ff00ff);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.6s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 255, 191, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #3a3a3a;
+            cursor: not-allowed;
+        }
+
+        .error, .success {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 1em;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .error { background: #ff4d4d; }
+        .success { background: #00cc99; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .loader {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 6px solid #ffffff;
+            border-top: 6px solid #00ffbf;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        button.loading .loader {
+            display: block;
+        }
+
+        button.loading span {
+            visibility: hidden;
+        }
+
+        .char-counter {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-size: 0.85em;
+            color: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+    <div id="grid-background"></div>
+    <div id="captchaContainer" class="captcha-container">
+        <h2>Hydra Shield Captcha</h2>
+        <p>Please enter the code below to access the website.</p>
+        <div id="captchaMessage" class="captcha-message" style="display: none;"></div>
+        <div class="captcha-code" id="captchaCode"></div>
+        <form id="captchaForm">
+            <input type="hidden" id="captchaCodeInput">
+            <input type="text" class="captcha-input" id="captchaInput" placeholder="Type the code here" required>
+            <button type="submit" class="captcha-button">Validate</button>
+        </form>
+    </div>
+    <div id="webhookContainer" class="container" style="display: none;">
+        <h2>Sender Discord Webhook</h2>
+        <div id="messageStatus"></div>
+        <form id="discordForm">
+            <div class="form-group">
+                <label for="webhook_url">URL del Webhook de Discord</label>
+                <input type="text" id="webhook_url" name="webhook_url" required>
+            </div>
+            <div class="form-group">
+                <label for="message">Mensaje a enviar</label>
+                <textarea id="message" name="message" required oninput="updateCharCount()"></textarea>
+                <span class="char-counter" id="charCount">0/2000</span>
+            </div>
+            <div class="form-group">
+                <label for="count">Cantidad de mensajes (1-10000)</label>
+                <input type="number" id="count" name="count" min="1" max="10000" value="1" required>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="includeEveryone" name="includeEveryone">
+                <label for="includeEveryone" style="display: inline;">Incluir @everyone</label>
+            </div>
+            <button type="submit" id="submitBtn"><span>Enviar</span><div class="loader"></div></button>
+        </form>
+    </div>
+
+    <script>
+        const MAX_MESSAGE_LENGTH = 2000;
+        const captchaChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const captchaLength = 4;
+
+        // Generar un código CAPTCHA
+        function generateCaptchaCode() {
+            let code = '';
+            for (let i = 0; i < captchaLength; i++) {
+                code += captchaChars.charAt(Math.floor(Math.random() * captchaChars.length));
+            }
+            return code;
+        }
+
+        // Mostrar el CAPTCHA inicial
+        let currentCaptchaCode = generateCaptchaCode();
+        const captchaCodeElement = document.getElementById('captchaCode');
+        const captchaCodeInput = document.getElementById('captchaCodeInput');
+        captchaCodeElement.textContent = currentCaptchaCode;
+        captchaCodeInput.value = currentCaptchaCode;
+
+        // Actualizar el CAPTCHA cada 60 segundos
+        setInterval(() => {
+            currentCaptchaCode = generateCaptchaCode();
+            captchaCodeElement.textContent = currentCaptchaCode;
+            captchaCodeInput.value = currentCaptchaCode;
+            // Limpiar el mensaje de error si existe
+            const captchaMessage = document.getElementById('captchaMessage');
+            captchaMessage.style.display = 'none';
+            captchaMessage.textContent = '';
+            document.getElementById('captchaInput').value = '';
+        }, 60000);
+
+        // Forzar que el CAPTCHA se muestre al recargar la página
+        window.addEventListener('load', () => {
+            localStorage.removeItem('captchaVerified'); // Restablecer el estado al recargar
+            showCaptcha();
+        });
+
+        // Mostrar el CAPTCHA
+        function showCaptcha() {
+            document.getElementById('captchaContainer').style.display = 'block';
+            document.getElementById('webhookContainer').style.display = 'none';
+        }
+
+        // Mostrar el formulario de webhook
+        function showWebhookForm() {
+            document.getElementById('captchaContainer').style.display = 'none';
+            document.getElementById('webhookContainer').style.display = 'block';
+        }
+
+        // Validar el CAPTCHA
+        document.getElementById('captchaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userInput = document.getElementById('captchaInput').value.toUpperCase();
+            const captchaCode = document.getElementById('captchaCodeInput').value.toUpperCase();
+            const captchaMessage = document.getElementById('captchaMessage');
+
+            if (userInput === captchaCode) {
+                captchaMessage.className = 'captcha-message success';
+                captchaMessage.textContent = 'Captcha completado. Enviando a webhook sender.';
+                captchaMessage.style.display = 'block';
+                localStorage.setItem('captchaVerified', 'true');
+                setTimeout(() => {
+                    showWebhookForm();
+                }, 1000);
+            } else {
+                captchaMessage.className = 'captcha-message error';
+                captchaMessage.textContent = 'Código incorrecto. Intenta de nuevo.';
+                captchaMessage.style.display = 'block';
+                document.getElementById('captchaInput').value = '';
+            }
+        });
+
+        // Enviar mensajes a Discord
+        document.getElementById('discordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const messageStatus = document.getElementById('messageStatus');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            const webhookUrl = document.getElementById('webhook_url').value;
+            const message = document.getElementById('message').value;
+            const count = parseInt(document.getElementById('count').value);
+            const includeEveryone = document.getElementById('includeEveryone').checked;
+            const fullMessage = includeEveryone ? `@everyone ${message}` : message;
+            const errors = [];
+
+            // Validaciones
+            if (!webhookUrl) {
+                errors.push('La URL del webhook es obligatoria.');
+            }
+            if (!message) {
+                errors.push('El mensaje es obligatorio.');
+            }
+            if (!webhookUrl.match(/discord\.com\/api\/webhooks/)) {
+                errors.push('La URL del webhook no es válida.');
+            }
+            if (fullMessage.length > MAX_MESSAGE_LENGTH) {
+                errors.push('El mensaje no puede exceder los 2000 caracteres.');
+            }
+
+            if (errors.length > 0) {
+                messageStatus.innerHTML = errors.map(error => `<div class="error">${error}</div>`).join('');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                return;
+            }
+
+            // Enviar mensajes
+            let successCount = 0;
+            for (let i = 0; i < count; i++) {
+                try {
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'SenderDiscordWebhook/1.0'
+                        },
+                        body: JSON.stringify({ content: fullMessage })
+                    });
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errors.push(`Error al enviar mensaje #${i + 1}`);
+                        break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100)); // 0.1s de espera
+                } catch (error) {
+                    errors.push(`Error al enviar mensaje #${i + 1}: ${error.message}`);
+                    break;
+                }
+            }
+
+            if (successCount > 0) {
+                messageStatus.innerHTML = `<div class="success">Se enviaron ${successCount} mensaje(s) correctamente.</div>`;
+            }
+            if (errors.length > 0) {
+                messageStatus.innerHTML += errors.map(error => `<div class="error">${error}</div>`).join('');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+        });
+
+        // Contador de caracteres
+        function updateCharCount() {
+            const textarea = document.getElementById('message');
+            const includeEveryone = document.getElementById('includeEveryone').checked;
+            if (textarea) {
+                const charCount = document.getElementById('charCount');
+                const count = textarea.value.length + (includeEveryone ? 11 : 0); // @everyone + espacio
+                const max = 2000;
+                charCount.textContent = `${count}/${max}`;
+                charCount.style.color = count > max ? '#ff4d4d' : '#b0b0b0';
+            }
+        }
+
+        // Actualizar el contador cuando se cambia la opción de @everyone
+        document.getElementById('includeEveryone').addEventListener('change', updateCharCount);
+        updateCharCount();
+    </script>
+</body>
+</html>
