@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de DevTools</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .message {
+            background: rgba(255, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Contenido de tu página</h1>
+        <p>Este es un ejemplo. Tu página "Sender Discord Webhook" iría aquí.</p>
+    </div>
+    <div id="warning" class="message" style="display: none;">
+        <p>¡Por favor, cierra las herramientas de desarrollador (F12) para continuar!</p>
+    </div>
+
+    <script>
+        // Deshabilitar teclas comunes para abrir DevTools
+        document.addEventListener('keydown', (e) => {
+            // F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+                showWarning();
+                return false;
+            }
+            // Ctrl+Shift+I (Inspector)
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                showWarning();
+                return false;
+            }
+            // Ctrl+Shift+J (Consola)
+            if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+                e.preventDefault();
+                showWarning();
+                return false;
+            }
+            // Ctrl+U (Ver código fuente)
+            if (e.ctrlKey && e.key === 'U') {
+                e.preventDefault();
+                showWarning();
+                return false;
+            }
+        });
+
+        // Deshabilitar clic derecho (para evitar "Inspeccionar")
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showWarning();
+            return false;
+        });
+
+        // Función para mostrar advertencia
+        function showWarning() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('warning').style.display = 'block';
+            // Redirigir después de 2 segundos (opcional)
+            setTimeout(() => {
+                window.location.href = 'about:blank'; // Redirige a una página en blanco
+            }, 2000);
+        }
+
+        // Detectar si DevTools está abierto
+        function detectDevTools() {
+            const threshold = 160; // Umbral para detectar cambio en dimensiones (indica que DevTools está abierto)
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            const orientation = widthThreshold ? 'vertical' : 'horizontal';
+
+            // Si las dimensiones indican que DevTools está abierto
+            if (widthThreshold || heightThreshold) {
+                showWarning();
+            }
+        }
+
+        // Verificar continuamente si DevTools está abierto
+        setInterval(detectDevTools, 500);
+
+        // Detectar cambios en el tamaño de la ventana (puede indicar que DevTools se abrió)
+        window.addEventListener('resize', detectDevTools);
+    </script>
+</body>
+</html>
